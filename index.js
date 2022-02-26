@@ -152,7 +152,7 @@ function insertRole(title, salary, department_id){
 
 function getEmployeeInfo(){
     const sql = "SELECT title FROM role; SELECT  first_name, last_name FROM employee ";
-    const managerArr = [];
+
     db.query(sql,[1,2], (err, row) => {
        const roleArr = [], 
              managerArr = [];
@@ -203,16 +203,52 @@ async function addEmployee(roleArray, managerArray){
         ])
         .then(answer => {
 
-            console.log('first name: ' + answer.firstNameInput);
-            console.log('last name: ' + answer.lastNameInput);
-            console.log('role : ' + answer.roleInput);
-            console.log('manager : ' + answer.managerInput);
+           const sql = "SELECT id FROM role WHERE title = ? " ;
+            // const sql = `SELECT id FROM role WHERE title = ? ,${answer.roleInput}; SELECT id FROM employee WHERE first_name = ? and last_name = ?, ${answer.firstNameInput, answer.lastNameInput}` ;
+            
 
-           // insertEmployeeTable(answer.firstNameInput, answer.lastNameInput,)
+            const sql2 = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
+         
+        
+            const firstName = answer.firstNameInput;
+            const lastName = answer.lastNameInput;
+            const roleName = answer.roleInput;
+            const managerName = answer.managerInput;
+
+            db.query(sql,roleName , (err, row) => {
+
+              
+
+                if(err){
+                    console.log(err)
+                    return;
+                }
+
+             
+
+                const roleId = row[0].id;
+
+                db.query(sql2, managerName, (err, row2) =>{
+                    if(err){
+                        console.log(err);
+                        return;
+                    }
+         
+                    const managerId = row2[0].id;
+                 
+                
+                    insertEmployeeTable(firstName, lastName, roleId, managerId);
+                })
+                
+            })
+    
 
             promptQuestion();
         })
 }
+
+
+
 
 function insertEmployeeTable(firstName, lastName, roldId, managerId){
     const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`;
