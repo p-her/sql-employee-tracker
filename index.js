@@ -28,8 +28,10 @@ async function promptQuestion() {
                 FROM department
                 RIGHT JOIN role ON role.department_id = department.id
                 RIGHT JOIN employee ON role_id = role.id
-                ORDER BY employee.id ASC;`;
-                viewTable(sql);
+                ORDER BY employee.id ASC`;
+                viewTable(sql) ;
+
+                // viewAllEmployee();
             }else if(answer.option === 'Add Department'){
                  inquirer
                     .prompt({
@@ -51,11 +53,117 @@ async function promptQuestion() {
                 addRole();
             }else if(answer.option === 'Add Employee'){
                 getEmployeeInfo();
+            }else if(answer.option === 'Update Employee Role'){
+                const sql = `SELECT first_name, last_name FROM employee`;
+                db.query(sql, (err, row) => {
+                    const employeeArr = [];
+                    if(err){
+                        console.log(err);
+                        return;
+                    }
+            
+                    for( let i = 0; i < row.length; i++){
+                        employeeArr[i] = row[i].first_name + ' ' + row[i].last_name;
+                    }
+            
+            
+                    inquirer.prompt({
+                        type: 'list',
+                        name: 'nameInput',
+                        message: "Which employee's role do you want to update?",
+                        choices: employeeArr
+                    }).then(employee => {
+                        const sql = `SELECT title FROM role`;
+                        db.query(sql, (err, row) => {
+                            if(err){
+                                console.log(err);
+                                return ;
+                            }
+                            const roleArr = [];
+                    
+                            for( let i = 0; i < row.length; i++){
+                                roleArr[i] = row[i].title;
+                            }
+                            inquirer.prompt({
+                                type: 'list',
+                                name: 'roleInput',
+                                message: 'Which role do you want to assign the selected employee?',
+                                choices: roleArr
+                            }).then(role => {
+
+                                const name = employee.nameInput;
+                                
+                                const sql = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
+                                db.query(sql,name, (err, row) =>{
+
+                                    updateEmployeeRole(role.roleInput, row[0].id )
+                      
+                                })
+
+                                
+                            })
+                        })
+                       
+                    })
+                })
+             
+
+                // updateEmployeeRole();
             }
             startDBConnection();
         })
 }
 
+
+
+
+function updateEmployeeRole(role, employeeId){
+    const sql = `UPDATE employee 
+                    INNER JOIN role ON employee.role_id = role.id 
+                    SET title = ? WHERE employee.id = ?`;
+
+    db.query(sql,[role, employeeId], (err, row) => {
+        if(err){
+            console.log(err);
+            return;
+        }
+
+        promptQuestion()
+    })
+}
+
+/*
+function viewAllEmployee(){
+    const sql1 = ` SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary 
+    FROM department
+    RIGHT JOIN role ON role.department_id = department.id
+    RIGHT JOIN employee ON role_id = role.id
+    ORDER BY employee.id ASC`;
+
+    const sql2 = `SELECT  concat(m.first_name , ' ', m.last_name )  as manager
+    FROM employee e
+    JOIN employee m
+    ON e.id = m.manager_id`;
+
+    const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary,concat(m.first_name , ' ', m.last_name )  as manager 
+    FROM department, role, employee e
+    JOIN employee m ON e.id = m.manager_id AND
+    RIGHT JOIN role ON role.department_id = department.id
+    RIGHT JOIN employee ON role_id = role.id
+    ORDER BY employee.id ASC `;
+
+    db.query(sql, (err, row) => {
+        if(err){
+            console.log(err);
+            return;
+        }
+
+       console.table(row)
+       
+        
+    })
+}
+*/
 function viewTable(query){
     const sql = query;
     db.query(sql, (err, row) => {
@@ -168,8 +276,7 @@ function getEmployeeInfo(){
         for(let j = 0; j < row[1].length; j++){
             managerArr[j] = row[1][j].first_name + " " + row[1][j].last_name ;
         }
-        // console.log(roleArr)
-        // console.log(managerArr)
+     
         addEmployee(roleArr, managerArr);
     
     })
@@ -270,5 +377,4 @@ function startDBConnection (){
         if (err) throw err;
       });
 }
-
 
