@@ -29,7 +29,15 @@ async function promptQuestion() {
                 RIGHT JOIN role ON role.department_id = department.id
                 RIGHT JOIN employee ON role_id = role.id
                 ORDER BY employee.id ASC`;
-                viewTable(sql) ;
+
+                
+
+
+                const sql2 = `SELECT concat(m.first_name,' ', m.last_name) as Manager
+                FROM employee e 
+                JOIN employee m
+                ON e.id = m.manager_id`;
+                viewTable(sql);
 
                 // viewAllEmployee();
             }else if(answer.option === 'Add Department'){
