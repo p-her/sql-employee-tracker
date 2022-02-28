@@ -65,8 +65,6 @@ async function promptQuestion() {
                     for( let i = 0; i < row.length; i++){
                         employeeArr[i] = row[i].first_name + ' ' + row[i].last_name;
                     }
-            
-            
                     inquirer.prompt({
                         type: 'list',
                         name: 'nameInput',
@@ -90,15 +88,40 @@ async function promptQuestion() {
                                 message: 'Which role do you want to assign the selected employee?',
                                 choices: roleArr
                             }).then(role => {
+                                //STOP HERE TRY TO GET DEPARTMENT NAME USING DEPARTMENT_ID FROM ROLE TABLE
+                          
+                                const departmentIdQuery = `SELECT department.id FROM department  
+                                                            RIGHT JOIN role ON  role.department_id = department.id WHERE role.title = ? ORDER BY department.name ASC`;
 
-                                const name = employee.nameInput;
+                                db.query(departmentIdQuery, role.roleInput, (err, row) => {
+                                    
+                                   
+                                    const depId = row[0].id;
+                                    const name = employee.nameInput;
+                                    console.log("name " + name)
                                 
-                                const sql = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
-                                db.query(sql,name, (err, row) =>{
+                                    const sql = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
+                                    db.query(sql,name, (err, row) =>{
+                                        // console.log('role id: ' + row[0].id)
+                                        const employeeId = row[0].id;
+                                        const roleName = role.roleInput;
 
-                                    updateEmployeeRole(role.roleInput, row[0].id )
-                      
+
+                                        console.log("depId " + depId)
+                                        console.log("employeeId " + employeeId)
+                                        console.log('roleName: ' + roleName)
+                                    
+                                        updateEmployeeRole( roleName,depId, employeeId)
+                                        
+                                      
+                                      
+                                    })
+
+                                  
+                        
                                 })
+                                // END HERE
+                               
 
                                 
                             })
@@ -107,22 +130,30 @@ async function promptQuestion() {
                     })
                 })
              
-
-                // updateEmployeeRole();
             }
             startDBConnection();
         })
 }
 
 
+// department_id = department.id change name
+
+function updateEmployeeRole( role, depId, empId){
 
 
-function updateEmployeeRole(role, employeeId){
-    const sql = `UPDATE employee 
-                    INNER JOIN role ON employee.role_id = role.id 
-                    SET title = ? WHERE employee.id = ?`;
+                //   const sql = `UPDATE employee 
+                //   INNER JOIN role ON employee.role_id = role.id
+                //   SET title = ? WHERE employee.id = ?
+                //  `;
 
-    db.query(sql,[role, employeeId], (err, row) => {
+                const sql = `UPDATE role 
+                LEFT JOIN department ON department.id = role.department_id
+                RIGHT JOIN employee ON employee.role_id = role.id
+                SET role.title = ?, role.department_id = ? WHERE employee.id = ?
+               `;
+
+                
+    db.query(sql,[role, depId, empId], (err, row) => {
         if(err){
             console.log(err);
             return;
@@ -130,6 +161,29 @@ function updateEmployeeRole(role, employeeId){
 
         promptQuestion()
     })
+}
+
+function updateDepartment( roleName){
+
+    const idsql = `SELECT department.id FROM department
+                    RIGHT JOIN role ON role.department_id = department.id
+                    WHERE title = ?`;
+
+
+    db.query(idsql, roleName, (err, row) => {
+        if(err){
+            console.log(err);
+            return;
+        }
+
+        console.log("======: " + row[0].id)
+        // console.log('department id '+ row[0].department_id)
+      
+    })
+}
+
+function updateEmployeeDepartment(roleId, roleName){
+    
 }
 
 /*
@@ -310,12 +364,8 @@ async function addEmployee(roleArray, managerArray){
         ])
         .then(answer => {
 
-           const sql = "SELECT id FROM role WHERE title = ? " ;
-            // const sql = `SELECT id FROM role WHERE title = ? ,${answer.roleInput}; SELECT id FROM employee WHERE first_name = ? and last_name = ?, ${answer.firstNameInput, answer.lastNameInput}` ;
-            
-
-            const sql2 = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
-         
+            const sql = "SELECT id FROM role WHERE title = ? " ;
+            const sql2 = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;  
         
             const firstName = answer.firstNameInput;
             const lastName = answer.lastNameInput;
@@ -324,38 +374,26 @@ async function addEmployee(roleArray, managerArray){
 
             db.query(sql,roleName , (err, row) => {
 
-              
-
                 if(err){
                     console.log(err)
                     return;
                 }
 
-             
-
                 const roleId = row[0].id;
-
                 db.query(sql2, managerName, (err, row2) =>{
                     if(err){
                         console.log(err);
                         return;
                     }
-         
                     const managerId = row2[0].id;
-                 
-                
                     insertEmployeeTable(firstName, lastName, roleId, managerId);
                 })
                 
             })
     
-
             promptQuestion();
         })
 }
-
-
-
 
 function insertEmployeeTable(firstName, lastName, roldId, managerId){
     const sql = `INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES (?, ?, ?, ?)`;
