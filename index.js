@@ -39,7 +39,7 @@ async function promptQuestion() {
                 ON e.id = m.manager_id`;
                 viewTable(sql);
 
-                // viewAllEmployee();
+           
             }else if(answer.option === 'Add Department'){
                  inquirer
                     .prompt({
@@ -96,7 +96,7 @@ async function promptQuestion() {
                                 message: 'Which role do you want to assign the selected employee?',
                                 choices: roleArr
                             }).then(role => {
-                                //STOP HERE TRY TO GET DEPARTMENT NAME USING DEPARTMENT_ID FROM ROLE TABLE
+                            
                           
                                 const departmentIdQuery = `SELECT department.id FROM department  
                                                             RIGHT JOIN role ON  role.department_id = department.id WHERE role.title = ? ORDER BY department.name ASC`;
@@ -106,21 +106,32 @@ async function promptQuestion() {
                                    
                                     const depId = row[0].id;
                                     const name = employee.nameInput;
-                                    console.log("name " + name)
+                              
                                 
                                     const sql = "SELECT  id FROM employee WHERE concat(first_name, ' ',last_name) = ? " ;
                                     db.query(sql,name, (err, row) =>{
-                                        // console.log('role id: ' + row[0].id)
+                                 
                                         const employeeId = row[0].id;
                                         const roleName = role.roleInput;
 
 
-                                        console.log("depId " + depId)
-                                        console.log("employeeId " + employeeId)
-                                        console.log('roleName: ' + roleName)
+
+                                        const sqlSalary = `SELECT salary FROM role WHERE title = ?`;
+            
+                                        db.query(sqlSalary,roleName , (err, row) => {
+                                            if(err){
+                                                console.log(err);
+                                                return;
+                                            }
+                                     
+                                            const salary = row[0].salary;
                                     
-                                        updateEmployeeRole( roleName,depId, employeeId)
+                                            console.log('==== salary: ' + salary)
+
+                                            updateEmployeeRole( roleName,salary, depId, employeeId)
                                         
+                                        })
+
                                       
                                       
                                     })
@@ -128,7 +139,7 @@ async function promptQuestion() {
                                   
                         
                                 })
-                                // END HERE
+                      
                                
 
                                 
@@ -146,29 +157,55 @@ async function promptQuestion() {
 
 // department_id = department.id change name
 
-function updateEmployeeRole( role, depId, empId){
+function updateEmployeeRole( role, salary, depId, empId){
 
+    console.log('role: ' + role)
+    console.log('depId: ' + depId)
+    console.log('empId: ' + empId)
 
-                //   const sql = `UPDATE employee 
-                //   INNER JOIN role ON employee.role_id = role.id
-                //   SET title = ? WHERE employee.id = ?
-                //  `;
+    // const sqlSalary = `SELECT salary FROM role WHERE title = ?`;
+            
+    
+                             
+    // db.query(sqlSalary,role , (err, row) => {
+    //     if(err){
+    //         console.log(err);
+    //         return;
+    //     }
+ 
+    //     const salary = row[0].salary;
 
-                const sql = `UPDATE role 
-                LEFT JOIN department ON department.id = role.department_id
-                RIGHT JOIN employee ON employee.role_id = role.id
-                SET role.title = ?, role.department_id = ? WHERE employee.id = ?
-               `;
+    //     console.log('==== salary: ' + salary)
+    
+    // })
+// set salary = ? where id = ?
+        const sql = `UPDATE role 
+        LEFT JOIN department ON department.id = role.department_id
+        RIGHT JOIN employee ON employee.role_id = role.id
+        SET role.title = ?, role.salary = ? , role.department_id = ? WHERE employee.id = ?
+       
+    
+       `;
 
-                
-    db.query(sql,[role, depId, empId], (err, row) => {
+        
+        db.query(sql,[role, salary, depId ,empId], (err, row) => {
+
+            console.log('role1: ' + role)
+            console.log('depId1: '+ depId)
+            console.log('empId1: ' + empId)
         if(err){
             console.log(err);
             return;
         }
 
         promptQuestion()
-    })
+})
+
+
+
+  
+
+         
 }
 
 function updateDepartment( roleName){
@@ -190,42 +227,8 @@ function updateDepartment( roleName){
     })
 }
 
-function updateEmployeeDepartment(roleId, roleName){
-    
-}
 
-/*
-function viewAllEmployee(){
-    const sql1 = ` SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary 
-    FROM department
-    RIGHT JOIN role ON role.department_id = department.id
-    RIGHT JOIN employee ON role_id = role.id
-    ORDER BY employee.id ASC`;
 
-    const sql2 = `SELECT  concat(m.first_name , ' ', m.last_name )  as manager
-    FROM employee e
-    JOIN employee m
-    ON e.id = m.manager_id`;
-
-    const sql = `SELECT employee.id, employee.first_name, employee.last_name, role.title, department.name as department, role.salary,concat(m.first_name , ' ', m.last_name )  as manager 
-    FROM department, role, employee e
-    JOIN employee m ON e.id = m.manager_id AND
-    RIGHT JOIN role ON role.department_id = department.id
-    RIGHT JOIN employee ON role_id = role.id
-    ORDER BY employee.id ASC `;
-
-    db.query(sql, (err, row) => {
-        if(err){
-            console.log(err);
-            return;
-        }
-
-       console.table(row)
-       
-        
-    })
-}
-*/
 function viewTable(query){
     const sql = query;
     db.query(sql, (err, row) => {
