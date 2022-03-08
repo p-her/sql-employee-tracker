@@ -30,13 +30,21 @@ async function promptQuestion() {
                 RIGHT JOIN employee ON role_id = role.id
                 ORDER BY employee.id ASC`;
 
-                
-
+            
 
                 const sql2 = `SELECT concat(m.first_name,' ', m.last_name) as Manager
                 FROM employee e 
                 JOIN employee m
                 ON e.id = m.manager_id`;
+
+
+                // `SELECT e.first_name, e.last_name FROM employee e
+                // INNER JOIN employee m ON e.id = m.manager_id;`
+
+
+                // `SELECT first_name , last_name FROM employee as`
+
+
                 viewTable(sql);
 
            
@@ -114,8 +122,6 @@ async function promptQuestion() {
                                         const employeeId = row[0].id;
                                         const roleName = role.roleInput;
 
-
-
                                         const sqlSalary = `SELECT salary FROM role WHERE title = ?`;
             
                                         db.query(sqlSalary,roleName , (err, row) => {
@@ -125,24 +131,14 @@ async function promptQuestion() {
                                             }
                                      
                                             const salary = row[0].salary;
-                                    
-                                            console.log('==== salary: ' + salary)
+                    
 
                                             updateEmployeeRole( roleName,salary, depId, employeeId)
                                         
                                         })
 
-                                      
-                                      
                                     })
-
-                                  
-                        
                                 })
-                      
-                               
-
-                                
                             })
                         })
                        
@@ -155,36 +151,12 @@ async function promptQuestion() {
 }
 
 
-// department_id = department.id change name
-
 function updateEmployeeRole( role, salary, depId, empId){
 
-    console.log('role: ' + role)
-    console.log('depId: ' + depId)
-    console.log('empId: ' + empId)
-
-    // const sqlSalary = `SELECT salary FROM role WHERE title = ?`;
-            
-    
-                             
-    // db.query(sqlSalary,role , (err, row) => {
-    //     if(err){
-    //         console.log(err);
-    //         return;
-    //     }
- 
-    //     const salary = row[0].salary;
-
-    //     console.log('==== salary: ' + salary)
-    
-    // })
-// set salary = ? where id = ?
         const sql = `UPDATE role 
         LEFT JOIN department ON department.id = role.department_id
         RIGHT JOIN employee ON employee.role_id = role.id
         SET role.title = ?, role.salary = ? , role.department_id = ? WHERE employee.id = ?
-       
-    
        `;
 
         
@@ -426,4 +398,13 @@ function startDBConnection (){
         if (err) throw err;
       });
 }
+
+
+
+
+
+
+
+
+
 
